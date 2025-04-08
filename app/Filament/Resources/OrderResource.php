@@ -3,11 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
-use App\Filament\Resources\OrderResource\RelationManagers;
+use App\Filament\Resources\OrderResource\RelationManagers\AddressRelationManager;
 use App\Models\Order;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -20,9 +22,12 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Number;
 
 use function Laravel\Prompts\select;
 
@@ -60,6 +65,7 @@ class OrderResource extends Resource
                         ])
                         ->default('pending')
                         ->required(),
+
                         ToggleButtons::make('status')
                         ->inline()
                         ->default('new')
@@ -143,8 +149,24 @@ class OrderResource extends Resource
                             ->numeric()
                             ->dehydrated()
                             ->columnSpan(3)
-                        ])->columns(12)
-                    ])
+                        ])->columns(12),
+                        Placeholder::make('grand_total_placeholder')
+                        ->label('Grand Total')
+                        ->content(function(Get $get,Set $set){
+                            $total=0;
+                            if(!$repeaters = $get('items')){
+                                return $total;
+                            }
+
+                            foreach($repeaters as $key=>$repeater){
+                                $total += $get("items.{$key}.total_amount");
+                            }
+                            $set('grand_total', $total);
+                            return Number::currency($total,'INR');
+                        })
+                    ]),
+                    Hidden::make('grand_total')
+                    ->default(0)
                 ])->columnSpanFull()
             ]);
     }
@@ -153,14 +175,62 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('user.name')
+                ->label('customer')
+                ->sortable()
+                ->searchable(),
+
+                TextColumn::make('grand_total')
+                ->numeric()
+                ->sortable()
+                ->money('INR'),
+
+                TextColumn::make('payment_method')
+                ->searchable()
+                ->sortable(),
+
+                TextColumn::make('payment_status')
+                ->searchable()
+                ->sortable(),
+
+                TextColumn::make('currency')
+                ->searchable()
+                ->sortable(),
+
+                TextColumn::make('shipping_method')
+                ->searchable()
+                ->sortable(),
+
+                SelectColumn::make('status')
+                ->options([
+                    'new' => 'New',
+                    'processing' => 'Processing',
+                    'shipped' => 'Shipped',
+                    'delivered' => 'Delivered',
+                    'cancelled' => 'Cancelled',
+                ])
+                ->sortable()
+                ->searchable(),
+
+                TextColumn::make('created_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault:true),
+
+                TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault:true)
             ])
             ->filters([
                 //
             ])
             ->actions([
+                Tables\Actions\ActionGroup::make([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -169,13 +239,21 @@ class OrderResource extends Resource
             ]);
     }
 
+
     public static function getRelations(): array
     {
         return [
-            //
+            AddressRelationManager::class,
         ];
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+    public static function getnavigationBadgeColor():string|array|null{
+        return static::getModel()::count()>10?'success':'danger';
+    }
     public static function getPages(): array
     {
         return [
