@@ -92,6 +92,8 @@ class OrderResource extends Resource
                             'shipped'=>'heroicon-m-truck',
                             'delivered'=>'heroicon-m-check-badge',
                             'cancelled'=>'heroicon-m-x-circle'
+
+                            
                         ]),
                         Select::make('currency')
                         ->options([
