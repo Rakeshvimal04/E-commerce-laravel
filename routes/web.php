@@ -37,6 +37,8 @@ Route::get('/login',LoginPage::class);
 
 Route::get('/forgot',  ForgetPasswordPage::class);
 
+Route::get('register',RegisterPage::class);
+
 Route::get('/reset',ResetPasswordPage::class);
 
 Route::get('/success',SuccessPage::class);
