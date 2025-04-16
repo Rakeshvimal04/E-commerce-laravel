@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{{ $title ?? 'Page Title' }}</title>
+        <title>{{ $title ?? 'Rakesh' }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
     </head>
@@ -12,7 +12,7 @@
         <main>
             {{ $slot }}
         </main>
-        @livewire('partials.footer')
+        {{-- @livewire('partials.footer') --}}
         @livewireScripts
     </body>
 </html>
